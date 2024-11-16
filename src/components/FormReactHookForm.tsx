@@ -1,10 +1,8 @@
 import { ErrorMessage } from "@hookform/error-message";
-import { zodResolver } from "@hookform/resolvers/zod";
 import { EyeIcon, EyeOffIcon, Loader } from "lucide-react";
 import { useState } from "react";
 import { FieldValues, useForm } from "react-hook-form";
 import { useHookFormMask } from "use-mask-input";
-import { userRegisterSchema, type UserRegister } from "../schema";
 
 export default function Form() {
   const [isShowPassword, setIsShowPassword] = useState<boolean>(false);
@@ -15,7 +13,7 @@ export default function Form() {
     setValue,
     setError,
     formState: { isSubmitting, errors },
-  } = useForm<UserRegister>({ resolver: zodResolver(userRegisterSchema) });
+  } = useForm();
 
   const maskRegister = useHookFormMask(register);
 
@@ -49,7 +47,7 @@ export default function Form() {
 
     if (!res.ok) {
       for (const field in resData.errors) {
-        setError(field as keyof UserRegister, {
+        setError(field, {
           type: "manual",
           message: resData.errors[field],
         });
@@ -63,14 +61,35 @@ export default function Form() {
     <form onSubmit={handleSubmit(onSubmit)}>
       <div className="mb-4">
         <label htmlFor="name">Nome Completo</label>
-        <input type="text" id="name" {...register("name")} />
+        <input
+          type="text"
+          id="name"
+          {...register("name", {
+            required: "O campo nome é obrigatório",
+            maxLength: {
+              value: 255,
+              message: "O nome dever ter no máximo 255 caracteres",
+            },
+          })}
+        />
         <p className="text-xs text-red-400 mt-1">
           <ErrorMessage errors={errors} name="name" />
         </p>
       </div>
       <div className="mb-4">
         <label htmlFor="email">E-mail</label>
-        <input className="" type="email" id="email" {...register("email")} />
+        <input
+          className=""
+          type="email"
+          id="email"
+          {...register("email", {
+            required: "O campo email  é obrigatório",
+            pattern: {
+              value: /^[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,4}$/,
+              message: "E-mail inválido",
+            },
+          })}
+        />
         <p className="text-xs text-red-400 mt-1">
           <ErrorMessage errors={errors} name="email" />
         </p>
@@ -81,7 +100,13 @@ export default function Form() {
           <input
             type={isShowPassword ? "text" : "password"}
             id="password"
-            {...register("password")}
+            {...register("password", {
+              required: "O campo senha é obrigatório",
+              minLength: {
+                value: 8,
+                message: "A senha deve ter no mínimo 6 caracteres",
+              },
+            })}
           />
 
           <p className="text-xs text-red-400 mt-1">
@@ -111,7 +136,19 @@ export default function Form() {
           <input
             type={isShowPassword ? "text" : "password"}
             id="confirm-password"
-            {...register("password_confirmation")}
+            {...register("password_confirmation", {
+              required: "O campo senha é obrigatório",
+              minLength: {
+                value: 8,
+                message: "A senha deve ter no mínimo 6 caracteres",
+              },
+              validate: (value, formValues) => {
+                if (value === formValues.password) {
+                  return true;
+                }
+                return "As senhas não são iguais";
+              },
+            })}
           />
           <p className="text-xs text-red-400 mt-1">
             <ErrorMessage errors={errors} name="password_confirmation" />
@@ -138,7 +175,13 @@ export default function Form() {
         <input
           type="text"
           id="phone"
-          {...maskRegister("phone", "(99) 99999-9999")}
+          {...maskRegister("phone", "(99) 99999-9999", {
+            required: "O campo telefone é obrigatório",
+            pattern: {
+              value: /\(\d{2}\) \d{4,5}-\d{4}/,
+              message: "Telefone inválido",
+            },
+          })}
         />
         <p className="text-xs text-red-400 mt-1">
           <ErrorMessage errors={errors} name="phone" />
@@ -146,7 +189,17 @@ export default function Form() {
       </div>
       <div className="mb-4">
         <label htmlFor="cpf">CPF</label>
-        <input type="text" id="cpf" {...maskRegister("cpf", "cpf")} />
+        <input
+          type="text"
+          id="cpf"
+          {...maskRegister("cpf", "cpf", {
+            required: "O campo CPF é obrigatório",
+            pattern: {
+              value: /^\d{3}\.\d{3}\.\d{3}-\d{2}$/,
+              message: "CPF inválido",
+            },
+          })}
+        />
         <p className="text-xs text-red-400 mt-1">
           <ErrorMessage errors={errors} name="cpf" />
         </p>
@@ -157,6 +210,11 @@ export default function Form() {
           type="text"
           id="cep"
           {...maskRegister("zipcode", "99999-999", {
+            required: "O campo CEP é obrigatório",
+            pattern: {
+              value: /^\d{5}-\d{3}$/,
+              message: "CEP inválido",
+            },
             onBlur: handleBlurZipCode,
           })}
         />
@@ -190,7 +248,9 @@ export default function Form() {
           type="checkbox"
           id="terms"
           className="mr-2 accent-slate-500"
-          {...register("terms")}
+          {...register("terms", {
+            required: "O campo termos é obrigatório",
+          })}
         />
         <label
           className="text-sm  font-light text-slate-500 mb-1 inline"
